@@ -1227,7 +1227,7 @@ ${reservation.discountCode ? `🎟️ Code promo : ${reservation.discountCode}` 
                     onChange={e => setHasAcceptedTerms(e.target.checked)}
                     data-testid="terms-checkbox"
                   />
-                  <span>J'accepte les conditions et confirme ma réservation.</span>
+                  <span>J&apos;accepte les conditions et confirme ma réservation.</span>
                 </label>
               </div>
             </div>
