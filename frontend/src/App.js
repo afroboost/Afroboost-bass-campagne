@@ -1928,9 +1928,64 @@ function App() {
   const [clickCount, setClickCount] = useState(0);
   const [lastClickTime, setLastClickTime] = useState(0);
 
+  // PWA Install Prompt State
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
   const t = useCallback((key) => translations[lang][key] || key, [lang]);
 
   useEffect(() => { localStorage.setItem("af_lang", lang); }, [lang]);
+
+  // PWA Install Prompt - Capture beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      // Prevent Chrome 67+ from automatically showing the prompt
+      e.preventDefault();
+      // Store the event for later use
+      setInstallPrompt(e);
+      // Check if user hasn't dismissed the banner before
+      const dismissed = localStorage.getItem('af_pwa_dismissed');
+      if (!dismissed) {
+        setShowInstallBanner(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Check if already installed (for iOS/Safari)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallBanner(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  // Handle PWA install button click
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    
+    // Show the install prompt
+    installPrompt.prompt();
+    
+    // Wait for user response
+    const { outcome } = await installPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      console.log('PWA installed');
+    }
+    
+    // Clear the prompt
+    setInstallPrompt(null);
+    setShowInstallBanner(false);
+  };
+
+  // Dismiss install banner
+  const dismissInstallBanner = () => {
+    setShowInstallBanner(false);
+    localStorage.setItem('af_pwa_dismissed', 'true');
+  };
 
   // MÉMORISATION CLIENT: Load saved client info from localStorage on mount
   useEffect(() => {
