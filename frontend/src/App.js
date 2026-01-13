@@ -1075,7 +1075,7 @@ function App() {
   const [offers, setOffers] = useState([]);
   const [users, setUsers] = useState([]);
   const [paymentLinks, setPaymentLinks] = useState({ stripe: "", paypal: "", twint: "", coachWhatsapp: "" });
-  const [concept, setConcept] = useState({ description: "", heroImageUrl: "" });
+  const [concept, setConcept] = useState({ description: "", heroImageUrl: "", logoUrl: "" });
   const [discountCodes, setDiscountCodes] = useState([]);
 
   const [selectedCourse, setSelectedCourse] = useState(null);
