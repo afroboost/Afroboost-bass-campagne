@@ -1242,7 +1242,7 @@ function App() {
                 <div className="p-4 rounded-lg" style={{ background: 'rgba(217, 28, 210, 0.1)', borderLeft: '4px solid #d91cd2' }}>
                   {appliedDiscount && (
                     <p className="text-green-400 text-sm mb-1">
-                      ✓ {t('discount')}: {appliedDiscount.type === 'CHF' ? `${appliedDiscount.value} CHF` : `${appliedDiscount.value}${appliedDiscount.type}`}
+                      ✓ {t('discount')}: {appliedDiscount.type === 'CHF' ? `-${appliedDiscount.value} CHF` : appliedDiscount.type === '100%' ? '100% (Gratuit)' : `-${appliedDiscount.value}%`}
                     </p>
                   )}
                   <p className="font-bold text-white text-lg" data-testid="total-price">{t('total')}: CHF {totalPrice}</p>
