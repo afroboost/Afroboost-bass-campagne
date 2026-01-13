@@ -1289,7 +1289,7 @@ function App() {
     );
   };
 
-  if (showSplash) return <SplashScreen />;
+  if (showSplash) return <SplashScreen logoUrl={concept.logoUrl} />;
   if (showCoachLogin) return <CoachLoginModal t={t} onLogin={() => { setCoachMode(true); setShowCoachLogin(false); }} onCancel={() => setShowCoachLogin(false)} />;
   if (coachMode) return <CoachDashboard t={t} lang={lang} onBack={() => setCoachMode(false)} onLogout={() => setCoachMode(false)} />;
 
