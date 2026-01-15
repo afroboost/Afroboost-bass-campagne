@@ -1,56 +1,61 @@
 // emailService.js - Service d'envoi d'emails automatisés via EmailJS
-// Compatible Vercel - Clés configurables via Admin ou variables d'environnement
+// Compatible Vercel - Configuration stockée dans MongoDB
 import emailjs from '@emailjs/browser';
 
-// === CONFIGURATION PAR DÉFAUT ===
-// Ces valeurs peuvent être remplacées par les variables d'environnement Vercel
-// ou par la configuration stockée dans localStorage
-const DEFAULT_CONFIG = {
-  serviceId: process.env.REACT_APP_EMAILJS_SERVICE_ID || '',
-  templateId: process.env.REACT_APP_EMAILJS_TEMPLATE_ID || '',
-  publicKey: process.env.REACT_APP_EMAILJS_PUBLIC_KEY || ''
-};
+// API URL
+const API = process.env.REACT_APP_BACKEND_URL || '';
 
-// Clé localStorage pour la configuration admin
-const EMAILJS_CONFIG_KEY = 'afroboost_emailjs_config';
+// === CONFIGURATION CACHE ===
+let cachedConfig = null;
 
 /**
- * Récupère la configuration EmailJS (localStorage > env vars)
+ * Récupère la configuration EmailJS depuis MongoDB
  */
-export const getEmailJSConfig = () => {
+export const getEmailJSConfig = async () => {
   try {
-    const stored = localStorage.getItem(EMAILJS_CONFIG_KEY);
-    if (stored) {
-      const config = JSON.parse(stored);
-      // Retourne la config stockée si elle a des valeurs
-      if (config.serviceId && config.templateId && config.publicKey) {
-        return config;
-      }
+    const response = await fetch(`${API}/api/emailjs-config`);
+    if (response.ok) {
+      cachedConfig = await response.json();
+      return cachedConfig;
     }
   } catch (e) {
-    console.error('Error reading EmailJS config:', e);
+    console.error('Error fetching EmailJS config:', e);
   }
-  return DEFAULT_CONFIG;
+  return { serviceId: '', templateId: '', publicKey: '' };
 };
 
 /**
- * Sauvegarde la configuration EmailJS dans localStorage
+ * Récupère la configuration EmailJS synchrone (depuis cache)
  */
-export const saveEmailJSConfig = (config) => {
+export const getEmailJSConfigSync = () => {
+  return cachedConfig || { serviceId: '', templateId: '', publicKey: '' };
+};
+
+/**
+ * Sauvegarde la configuration EmailJS dans MongoDB
+ */
+export const saveEmailJSConfig = async (config) => {
   try {
-    localStorage.setItem(EMAILJS_CONFIG_KEY, JSON.stringify(config));
-    return true;
+    const response = await fetch(`${API}/api/emailjs-config`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+    if (response.ok) {
+      cachedConfig = await response.json();
+      return true;
+    }
   } catch (e) {
     console.error('Error saving EmailJS config:', e);
-    return false;
   }
+  return false;
 };
 
 /**
  * Vérifie si EmailJS est configuré
  */
 export const isEmailJSConfigured = () => {
-  const config = getEmailJSConfig();
+  const config = cachedConfig || { serviceId: '', templateId: '', publicKey: '' };
   return !!(config.serviceId && config.templateId && config.publicKey);
 };
 
@@ -58,7 +63,7 @@ export const isEmailJSConfigured = () => {
  * Initialise EmailJS avec la clé publique
  */
 export const initEmailJS = () => {
-  const config = getEmailJSConfig();
+  const config = cachedConfig || { publicKey: '' };
   if (config.publicKey) {
     emailjs.init(config.publicKey);
     return true;
@@ -68,16 +73,9 @@ export const initEmailJS = () => {
 
 /**
  * Envoie un email à un destinataire unique
- * @param {Object} params - Paramètres du template
- * @param {string} params.to_email - Email du destinataire
- * @param {string} params.to_name - Nom du destinataire
- * @param {string} params.subject - Sujet de l'email
- * @param {string} params.message - Corps du message
- * @param {string} [params.media_url] - URL du média (optionnel)
- * @returns {Promise<Object>} Résultat de l'envoi
  */
 export const sendEmail = async (params) => {
-  const config = getEmailJSConfig();
+  const config = cachedConfig || await getEmailJSConfig();
   
   if (!config.serviceId || !config.templateId || !config.publicKey) {
     throw new Error('EmailJS non configuré. Veuillez configurer les clés dans l\'onglet Campagnes.');
@@ -120,10 +118,6 @@ export const sendEmail = async (params) => {
 
 /**
  * Envoie des emails en masse avec progression
- * @param {Array} recipients - Liste des destinataires [{email, name}]
- * @param {Object} campaign - Données de la campagne {name, message, mediaUrl}
- * @param {Function} onProgress - Callback de progression (current, total, status)
- * @returns {Promise<Object>} Résultats {sent, failed, errors}
  */
 export const sendBulkEmails = async (recipients, campaign, onProgress) => {
   const results = {
@@ -135,6 +129,11 @@ export const sendBulkEmails = async (recipients, campaign, onProgress) => {
 
   const total = recipients.length;
 
+  // Charger la config si pas en cache
+  if (!cachedConfig) {
+    await getEmailJSConfig();
+  }
+
   // Initialiser EmailJS
   if (!initEmailJS()) {
     return {
@@ -144,11 +143,10 @@ export const sendBulkEmails = async (recipients, campaign, onProgress) => {
     };
   }
 
-  // Envoyer les emails un par un avec délai pour éviter le rate limiting
+  // Envoyer les emails un par un avec délai
   for (let i = 0; i < recipients.length; i++) {
     const recipient = recipients[i];
     
-    // Callback de progression
     if (onProgress) {
       onProgress(i + 1, total, 'sending', recipient.name || recipient.email);
     }
@@ -190,13 +188,12 @@ export const sendBulkEmails = async (recipients, campaign, onProgress) => {
       });
     }
 
-    // Délai entre les envois (200ms) pour éviter le rate limiting
+    // Délai entre les envois (200ms)
     if (i < recipients.length - 1) {
       await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
 
-  // Callback final
   if (onProgress) {
     onProgress(total, total, 'completed');
   }
@@ -205,21 +202,20 @@ export const sendBulkEmails = async (recipients, campaign, onProgress) => {
 };
 
 /**
- * Teste la configuration EmailJS en envoyant un email de test
- * @param {string} testEmail - Email de test
- * @returns {Promise<Object>} Résultat du test
+ * Teste la configuration EmailJS
  */
 export const testEmailJSConfig = async (testEmail) => {
   return sendEmail({
     to_email: testEmail,
     to_name: 'Test',
     subject: 'Test EmailJS - Afroboost',
-    message: '🎉 Félicitations ! Votre configuration EmailJS fonctionne correctement.\n\nCe message a été envoyé automatiquement pour tester l\'intégration.'
+    message: '🎉 Félicitations ! Votre configuration EmailJS fonctionne correctement.'
   });
 };
 
 export default {
   getEmailJSConfig,
+  getEmailJSConfigSync,
   saveEmailJSConfig,
   isEmailJSConfigured,
   initEmailJS,
