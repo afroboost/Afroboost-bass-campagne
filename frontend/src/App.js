@@ -371,21 +371,37 @@ function formatDate(d, time, lang) {
 
 // Parse media URL (YouTube, Vimeo, Image)
 function parseMediaUrl(url) {
-  if (!url) return null;
+  if (!url || typeof url !== 'string') return null;
   
-  // YouTube
-  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return null;
+  
+  // YouTube - Support multiple formats
+  // youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID, youtube.com/v/ID
+  const ytMatch = trimmedUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch) return { type: 'youtube', id: ytMatch[1] };
   
-  // Vimeo
-  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  // Vimeo - Support multiple formats
+  const vimeoMatch = trimmedUrl.match(/vimeo\.com\/(?:video\/)?(\d+)/);
   if (vimeoMatch) return { type: 'vimeo', id: vimeoMatch[1] };
   
-  // MP4 Video
-  if (url.toLowerCase().endsWith('.mp4')) return { type: 'video', url };
+  // Video files - MP4, WebM, MOV, AVI
+  const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.m4v', '.ogv'];
+  const lowerUrl = trimmedUrl.toLowerCase();
+  if (videoExtensions.some(ext => lowerUrl.includes(ext))) {
+    return { type: 'video', url: trimmedUrl };
+  }
   
-  // Image
-  return { type: 'image', url };
+  // Image - Accept all common formats and CDN URLs
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'];
+  const imageCDNs = ['imgbb.com', 'cloudinary.com', 'imgur.com', 'unsplash.com', 'pexels.com', 'i.ibb.co'];
+  
+  if (imageExtensions.some(ext => lowerUrl.includes(ext)) || imageCDNs.some(cdn => lowerUrl.includes(cdn))) {
+    return { type: 'image', url: trimmedUrl };
+  }
+  
+  // Default: treat as image (many CDNs don't have extensions in URLs)
+  return { type: 'image', url: trimmedUrl };
 }
 
 // Globe Icon - Clean, no background
