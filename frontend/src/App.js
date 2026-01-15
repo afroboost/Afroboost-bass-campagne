@@ -2889,21 +2889,83 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   
-                  {/* === EMAIL GROUPÉ (BCC) === */}
+                  {/* === EMAIL AUTOMATIQUE (EmailJS) === */}
                   <div className="p-4 rounded-xl bg-blue-900/20 border border-blue-500/30">
                     <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-                      📧 Email Groupé
-                    </h4>
-                    <p className="text-xs text-white/60 mb-3">
-                      {contactStats.withEmail} destinataire(s) en BCC
-                    </p>
-                    {contactStats.withEmail > 0 ? (
-                      <a 
-                        href={generateGroupedEmailLink()}
-                        className="block w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-center font-medium transition-all"
+                      📧 Email Automatique
+                      <button 
+                        type="button"
+                        onClick={() => setShowEmailJSConfig(!showEmailJSConfig)}
+                        className="ml-auto text-xs text-blue-400 hover:text-blue-300"
                       >
-                        📧 Ouvrir Email
-                      </a>
+                        ⚙️ Config
+                      </button>
+                    </h4>
+                    
+                    {/* Barre de progression */}
+                    {emailSendingProgress && (
+                      <div className="mb-3">
+                        <div className="flex justify-between text-xs text-white/80 mb-1">
+                          <span>Envoi en cours...</span>
+                          <span>{emailSendingProgress.current}/{emailSendingProgress.total}</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${(emailSendingProgress.current / emailSendingProgress.total) * 100}%` }}
+                          />
+                        </div>
+                        {emailSendingProgress.name && (
+                          <p className="text-xs text-blue-300 mt-1 truncate">→ {emailSendingProgress.name}</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Résultats d'envoi */}
+                    {emailSendingResults && !emailSendingProgress && (
+                      <div className="mb-3 p-2 rounded-lg bg-black/30">
+                        <p className="text-sm font-semibold text-white">
+                          ✅ {emailSendingResults.sent} envoyé(s)
+                          {emailSendingResults.failed > 0 && (
+                            <span className="text-red-400 ml-2">❌ {emailSendingResults.failed} échec(s)</span>
+                          )}
+                        </p>
+                        <button 
+                          type="button"
+                          onClick={() => setEmailSendingResults(null)}
+                          className="text-xs text-blue-400 mt-1"
+                        >
+                          Fermer
+                        </button>
+                      </div>
+                    )}
+                    
+                    <p className="text-xs text-white/60 mb-3">
+                      {contactStats.withEmail} destinataire(s)
+                      {isEmailJSConfigured() ? (
+                        <span className="text-green-400 ml-1">✓ Configuré</span>
+                      ) : (
+                        <span className="text-yellow-400 ml-1">⚠️ Non configuré</span>
+                      )}
+                    </p>
+                    
+                    {contactStats.withEmail > 0 ? (
+                      <div className="space-y-2">
+                        <button 
+                          type="button"
+                          onClick={handleSendEmailCampaign}
+                          disabled={emailSendingProgress !== null || !isEmailJSConfigured()}
+                          className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-center font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {emailSendingProgress ? '⏳ Envoi...' : '🚀 Envoyer automatiquement'}
+                        </button>
+                        <a 
+                          href={generateGroupedEmailLink()}
+                          className="block w-full py-2 rounded-lg glass text-white text-center text-xs opacity-70 hover:opacity-100"
+                        >
+                          📧 Ouvrir client email (BCC)
+                        </a>
+                      </div>
                     ) : (
                       <button disabled className="w-full py-3 rounded-lg bg-gray-600/50 text-gray-400 cursor-not-allowed">
                         Aucun email
