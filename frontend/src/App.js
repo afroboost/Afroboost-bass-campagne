@@ -4349,6 +4349,9 @@ function App() {
   // Navigation et filtrage
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Indicateur de scroll pour les nouveaux utilisateurs
+  const showScrollIndicator = useScrollIndicator();
 
   // Check for /validate/:code URL on mount
   useEffect(() => {
