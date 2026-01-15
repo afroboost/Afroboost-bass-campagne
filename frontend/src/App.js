@@ -991,13 +991,17 @@ const QRScannerModal = ({ onClose, onValidate, scanResult, scanError, onManualVa
         throw new Error("Scanner container not found");
       }
 
-      // IMPORTANT: Stop any previous session first
+      // IMPORTANT: Stop any previous session first using getState()
       if (html5QrCodeRef.current) {
         try {
-          await html5QrCodeRef.current.stop();
+          // getState(): 0 = NOT_STARTED, 1 = SCANNING, 2 = PAUSED
+          if (html5QrCodeRef.current.getState && html5QrCodeRef.current.getState() !== 0) {
+            await html5QrCodeRef.current.stop();
+          }
           html5QrCodeRef.current = null;
         } catch (e) {
-          console.log("No previous session to stop");
+          console.log("Clearing previous session:", e);
+          html5QrCodeRef.current = null;
         }
       }
 
