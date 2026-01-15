@@ -223,6 +223,15 @@ class Concept(BaseModel):
     termsText: str = ""  # CGV - Conditions Générales de Vente
     googleReviewsUrl: str = ""  # Lien avis Google
     defaultLandingSection: str = "sessions"  # Section d'atterrissage par défaut: "sessions", "offers", "shop"
+    # Liens externes
+    externalLink1Title: str = ""
+    externalLink1Url: str = ""
+    externalLink2Title: str = ""
+    externalLink2Url: str = ""
+    # Modes de paiement acceptés
+    paymentTwint: bool = False
+    paymentPaypal: bool = False
+    paymentCreditCard: bool = False
 
 class ConceptUpdate(BaseModel):
     description: Optional[str] = None
@@ -233,6 +242,15 @@ class ConceptUpdate(BaseModel):
     termsText: Optional[str] = None  # CGV - Conditions Générales de Vente
     googleReviewsUrl: Optional[str] = None  # Lien avis Google
     defaultLandingSection: Optional[str] = None  # Section d'atterrissage par défaut
+    # Liens externes
+    externalLink1Title: Optional[str] = None
+    externalLink1Url: Optional[str] = None
+    externalLink2Title: Optional[str] = None
+    externalLink2Url: Optional[str] = None
+    # Modes de paiement acceptés
+    paymentTwint: Optional[bool] = None
+    paymentPaypal: Optional[bool] = None
+    paymentCreditCard: Optional[bool] = None
 
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
