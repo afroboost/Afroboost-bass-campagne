@@ -652,9 +652,10 @@ const OfferCard = ({ offer, selected, onClick }) => {
   );
 };
 
-// Offer Card for Horizontal Slider - With LED effect and Info icon
+// Offer Card for Horizontal Slider - With LED effect, Info icon, and Zoom
 const OfferCardSlider = ({ offer, selected, onClick }) => {
   const [showDescription, setShowDescription] = useState(false);
+  const [showZoom, setShowZoom] = useState(false);
   const defaultImage = "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=250&fit=crop";
   
   const toggleDescription = (e) => {
@@ -662,84 +663,156 @@ const OfferCardSlider = ({ offer, selected, onClick }) => {
     setShowDescription(!showDescription);
   };
   
+  const toggleZoom = (e) => {
+    e.stopPropagation();
+    setShowZoom(!showZoom);
+  };
+  
   return (
-    <div 
-      className="flex-shrink-0 snap-start"
-      style={{ width: '300px', minWidth: '300px' }}
-    >
-      <div 
-        onClick={onClick}
-        className={`offer-card-slider rounded-xl overflow-hidden cursor-pointer transition-all duration-300`}
-        style={{
-          boxShadow: selected 
-            ? '0 0 25px #d91cd2, 0 0 50px rgba(217, 28, 210, 0.6), inset 0 0 25px rgba(217, 28, 210, 0.15)' 
-            : '0 4px 20px rgba(0,0,0,0.4)',
-          border: selected ? '3px solid #d91cd2' : '1px solid rgba(255,255,255,0.15)',
-          transform: selected ? 'scale(1.03)' : 'scale(1)',
-          background: 'linear-gradient(180deg, rgba(20,10,30,0.98) 0%, rgba(5,0,15,0.99) 100%)'
-        }}
-        data-testid={`offer-card-${offer.id}`}
-      >
-        {/* Image Section - Larger height */}
-        <div style={{ position: 'relative', height: '180px' }}>
-          {!showDescription ? (
-            <>
-              <img 
-                src={offer.thumbnail || defaultImage} 
-                alt={offer.name} 
-                className="w-full h-full object-cover"
-                onError={(e) => { e.target.src = defaultImage; }}
-              />
-              {/* Info Icon "i" - Clickable */}
-              {offer.description && (
-                <div 
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110"
-                  style={{ 
-                    background: 'rgba(217, 28, 210, 0.9)',
-                    boxShadow: '0 0 10px rgba(217, 28, 210, 0.5)'
-                  }}
-                  onClick={toggleDescription}
-                  data-testid={`offer-info-${offer.id}`}
-                  title="Voir la description"
-                >
-                  <InfoIcon />
-                </div>
-              )}
-              {/* Selected indicator */}
-              {selected && (
-                <div className="absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-bold text-white"
-                  style={{ background: '#d91cd2', boxShadow: '0 0 10px #d91cd2' }}>
-                  ✓ Sélectionné
-                </div>
-              )}
-            </>
-          ) : (
-            /* Description Panel */
-            <div 
-              className="w-full h-full flex flex-col justify-center p-4"
-              style={{ background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.95) 0%, rgba(217, 28, 210, 0.9) 100%)' }}
+    <>
+      {/* Zoom Modal */}
+      {showZoom && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+          onClick={toggleZoom}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] p-4">
+            <img 
+              src={offer.thumbnail || defaultImage} 
+              alt={offer.name} 
+              className="max-w-full max-h-[80vh] object-contain rounded-xl"
+              style={{ boxShadow: '0 0 40px rgba(217, 28, 210, 0.5)' }}
+            />
+            <button 
+              className="absolute top-2 right-2 w-10 h-10 rounded-full bg-black/50 text-white text-2xl hover:bg-black/80 flex items-center justify-center"
+              onClick={toggleZoom}
             >
-              <p className="text-white text-sm leading-relaxed">{offer.description}</p>
-              <button 
-                className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 transition-all"
-                onClick={toggleDescription}
-                title="Fermer"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-          )}
+              ×
+            </button>
+            <p className="text-center text-white mt-4 text-lg font-semibold">{offer.name}</p>
+          </div>
         </div>
-        
-        {/* Content Section */}
-        <div className="p-4">
-          <p className="font-semibold text-white mb-2" style={{ fontSize: '17px' }}>{offer.name}</p>
-          <span className="text-2xl font-bold" style={{ color: '#d91cd2', textShadow: selected ? '0 0 10px rgba(217, 28, 210, 0.5)' : 'none' }}>
-            CHF {offer.price}.-
-          </span>
+      )}
+      
+      <div 
+        className="flex-shrink-0 snap-start"
+        style={{ width: '300px', minWidth: '300px', padding: '4px' }}
+      >
+        <div 
+          onClick={onClick}
+          className={`offer-card-slider rounded-xl overflow-visible cursor-pointer transition-all duration-300`}
+          style={{
+            boxShadow: selected 
+              ? '0 0 0 3px #d91cd2, 0 0 30px #d91cd2, 0 0 60px rgba(217, 28, 210, 0.5)' 
+              : '0 4px 20px rgba(0,0,0,0.4)',
+            border: 'none',
+            transform: selected ? 'scale(1.02)' : 'scale(1)',
+            background: 'linear-gradient(180deg, rgba(20,10,30,0.98) 0%, rgba(5,0,15,0.99) 100%)',
+            borderRadius: '16px',
+            overflow: 'hidden'
+          }}
+          data-testid={`offer-card-${offer.id}`}
+        >
+          {/* Image Section */}
+          <div style={{ position: 'relative', height: '180px', overflow: 'hidden' }}>
+            {!showDescription ? (
+              <>
+                <img 
+                  src={offer.thumbnail || defaultImage} 
+                  alt={offer.name} 
+                  className="w-full h-full"
+                  style={{ objectFit: 'cover', objectPosition: 'center' }}
+                  onError={(e) => { e.target.src = defaultImage; }}
+                />
+                
+                {/* Zoom Button (Loupe) - Top Left */}
+                <div 
+                  className="absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110"
+                  style={{ 
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    backdropFilter: 'blur(4px)'
+                  }}
+                  onClick={toggleZoom}
+                  title="Agrandir l'image"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                    <path d="M11 8v6M8 11h6"/>
+                  </svg>
+                </div>
+                
+                {/* Info Icon "i" - Top Right - Minimalist */}
+                {offer.description && (
+                  <div 
+                    className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110"
+                    style={{ 
+                      background: 'rgba(217, 28, 210, 0.85)',
+                      boxShadow: '0 0 8px rgba(217, 28, 210, 0.5)'
+                    }}
+                    onClick={toggleDescription}
+                    data-testid={`offer-info-${offer.id}`}
+                    title="Voir la description"
+                  >
+                    <span className="text-white text-sm font-bold">i</span>
+                  </div>
+                )}
+                
+                {/* Selected indicator */}
+                {selected && (
+                  <div 
+                    className="absolute bottom-3 left-3 px-3 py-1 rounded-full text-xs font-bold text-white flex items-center gap-1"
+                    style={{ 
+                      background: 'linear-gradient(135deg, #d91cd2 0%, #8b5cf6 100%)', 
+                      boxShadow: '0 0 15px rgba(217, 28, 210, 0.7)' 
+                    }}
+                  >
+                    <span>✓</span> Sélectionné
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Description Panel */
+              <div 
+                className="w-full h-full flex flex-col justify-center p-4"
+                style={{ background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.95) 0%, rgba(217, 28, 210, 0.9) 100%)' }}
+              >
+                <p className="text-white text-sm leading-relaxed">{offer.description}</p>
+                <button 
+                  className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 transition-all text-white"
+                  onClick={toggleDescription}
+                  title="Fermer"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {/* Content Section */}
+          <div className="p-4">
+            <p className="font-semibold text-white mb-2" style={{ fontSize: '17px' }}>{offer.name}</p>
+            <div className="flex items-baseline gap-2">
+              <span 
+                className="text-2xl font-bold" 
+                style={{ 
+                  color: '#d91cd2', 
+                  textShadow: selected ? '0 0 15px rgba(217, 28, 210, 0.6)' : 'none' 
+                }}
+              >
+                CHF {offer.price}.-
+              </span>
+              {offer.tva > 0 && (
+                <span className="text-xs text-white opacity-50">TVA {offer.tva}%</span>
+              )}
+            </div>
+            {offer.isProduct && offer.shippingCost > 0 && (
+              <p className="text-xs text-white opacity-50 mt-1">+ CHF {offer.shippingCost} frais de port</p>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
