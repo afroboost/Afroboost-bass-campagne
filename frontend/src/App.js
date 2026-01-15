@@ -1481,7 +1481,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
   const [offers, setOffers] = useState([]);
   const [users, setUsers] = useState([]);
   const [paymentLinks, setPaymentLinks] = useState({ stripe: "", paypal: "", twint: "", coachWhatsapp: "" });
-  const [concept, setConcept] = useState({ description: "", heroImageUrl: "", logoUrl: "", faviconUrl: "", termsText: "" });
+  const [concept, setConcept] = useState({ description: "", heroImageUrl: "", logoUrl: "", faviconUrl: "", termsText: "", googleReviewsUrl: "" });
   const [discountCodes, setDiscountCodes] = useState([]);
   const [newCode, setNewCode] = useState({ code: "", type: "", value: "", assignedEmail: "", courses: [], maxUses: "", expiresAt: "" });
   const [newCourse, setNewCourse] = useState({ name: "", weekday: 0, time: "18:30", locationName: "", mapsUrl: "" });
@@ -3074,7 +3074,7 @@ function App() {
   const [offers, setOffers] = useState([]);
   const [users, setUsers] = useState([]);
   const [paymentLinks, setPaymentLinks] = useState({ stripe: "", paypal: "", twint: "", coachWhatsapp: "" });
-  const [concept, setConcept] = useState({ description: "", heroImageUrl: "", logoUrl: "", faviconUrl: "", termsText: "" });
+  const [concept, setConcept] = useState({ description: "", heroImageUrl: "", logoUrl: "", faviconUrl: "", termsText: "", googleReviewsUrl: "" });
   const [discountCodes, setDiscountCodes] = useState([]);
 
   const [selectedCourse, setSelectedCourse] = useState(null);
