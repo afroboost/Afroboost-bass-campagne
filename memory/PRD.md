@@ -343,6 +343,11 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - **💳 Modes de paiement** : Checkboxes Twint, PayPal, Carte de Crédit dans l'admin
   - **Icônes paiement** : Rectangle pied de page avec icônes des paiements cochés (🔵 Twint, 🅿️ PayPal, 💳 Carte)
   - **Sauvegarde fonctionnelle** : Backend mis à jour avec nouveaux champs dans modèle Concept
+- [x] **Navigation Textuelle & Logos Paiement (15 Jan 2026)**:
+  - **Footer minimaliste** : Navigation horizontale textuelle sans icônes (Lien1 | Lien2 | Installer | ©)
+  - **Logos officiels** : Twint, PayPal, Visa, Mastercard en blanc (filtre invert) sans rectangle
+  - **Toggles admin** : Interrupteurs ON/OFF pour activer/désactiver chaque logo de paiement
+  - **Police fine** : Style minimaliste avec font-weight 300 et letter-spacing
 
 ### P1 - À faire
 - [ ] Continuer refactoring: Extraire CoachDashboard, CoachLoginModal dans composants séparés
