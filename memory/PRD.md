@@ -209,23 +209,26 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 │       └── test_campaigns_api.py
 └── frontend/
     ├── src/
-    │   ├── App.js      # Composant React principal (~3500 lignes, en cours de découpage)
+    │   ├── App.js      # Composant React principal (~3600 lignes)
     │   ├── App.css     # Styles néon organisés par sections
     │   ├── config/
     │   │   ├── index.js      # Configuration groupée
     │   │   └── constants.js  # Constantes exportées
+    │   ├── services/
+    │   │   ├── index.js          # Export centralisé services (NOUVEAU)
+    │   │   └── emailService.js   # EmailJS automatisé (NOUVEAU)
     │   ├── components/
-    │   │   ├── index.js          # Export centralisé (NOUVEAU)
-    │   │   ├── OfferCard.js      # Composants offres + multi-images (NOUVEAU)
-    │   │   ├── QRScanner.js      # Scanner QR avec gestion caméra (NOUVEAU)
-    │   │   ├── AdminCampaigns.js # Hooks + composants campagnes (NOUVEAU)
+    │   │   ├── index.js          # Export centralisé
+    │   │   ├── OfferCard.js      # Composants offres + multi-images
+    │   │   ├── QRScanner.js      # Scanner QR avec gestion caméra
+    │   │   ├── AdminCampaigns.js # Hooks + composants campagnes
     │   │   ├── LanguageSelector.jsx
     │   │   └── ui/
     │   │       └── index.jsx     # Composants UI de base
     │   ├── hooks/
-    │   │   └── index.js      # Hooks personnalisés (préparé)
+    │   │   └── index.js      # Hooks personnalisés
     │   └── utils/
-    │       └── i18n.js       # Internationalisation (préparé)
+    │       └── i18n.js       # Internationalisation
     ├── vercel.json           # Configuration déploiement Vercel
     ├── ARCHITECTURE.md       # Documentation structure
     └── public/
