@@ -2631,9 +2631,9 @@ function App() {
           <div className="mb-8">
             <h2 className="font-semibold mb-4 text-white" style={{ fontSize: '18px' }}>{t('chooseOffer')}</h2>
             
-            {/* Horizontal Slider for Offers */}
+            {/* Horizontal Slider for Offers with LED effect */}
             <div 
-              className="offers-slider flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory"
+              className="offers-slider flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory px-2"
               style={{ 
                 scrollbarWidth: 'thin',
                 scrollbarColor: '#d91cd2 #1a1a2e',
@@ -2641,42 +2641,17 @@ function App() {
               }}
             >
               {visibleOffers.map(offer => (
-                <div 
+                <OfferCardSlider 
                   key={offer.id} 
-                  className="flex-shrink-0 snap-start"
-                  style={{ width: '280px' }}
-                >
-                  <div 
-                    onClick={() => setSelectedOffer(offer)}
-                    className={`offer-card rounded-xl overflow-hidden cursor-pointer transition-all duration-300 ${selectedOffer?.id === offer.id ? 'selected' : ''}`}
-                    style={{
-                      boxShadow: selectedOffer?.id === offer.id 
-                        ? '0 0 20px #d91cd2, 0 0 40px rgba(217, 28, 210, 0.5), inset 0 0 20px rgba(217, 28, 210, 0.1)' 
-                        : '0 4px 15px rgba(0,0,0,0.3)',
-                      border: selectedOffer?.id === offer.id ? '2px solid #d91cd2' : '1px solid rgba(255,255,255,0.1)',
-                      transform: selectedOffer?.id === offer.id ? 'scale(1.02)' : 'scale(1)'
-                    }}
-                    data-testid={`offer-card-${offer.id}`}
-                  >
-                    {offer.thumbnail && (
-                      <div className="relative" style={{ height: '140px' }}>
-                        <img src={offer.thumbnail} alt={offer.name} className="w-full h-full object-cover" />
-                        {offer.description && (
-                          <InfoIcon description={offer.description} />
-                        )}
-                      </div>
-                    )}
-                    <div className="p-4" style={{ background: 'linear-gradient(180deg, rgba(30,20,40,0.95) 0%, rgba(10,5,20,0.98) 100%)' }}>
-                      <p className="font-semibold text-white mb-2" style={{ fontSize: '16px' }}>{offer.name}</p>
-                      <span className="text-2xl font-bold" style={{ color: '#d91cd2' }}>CHF {offer.price}.-</span>
-                    </div>
-                  </div>
-                </div>
+                  offer={offer} 
+                  selected={selectedOffer?.id === offer.id} 
+                  onClick={() => setSelectedOffer(offer)} 
+                />
               ))}
             </div>
             
             {/* Slider navigation hint */}
-            {visibleOffers.length > 2 && (
+            {visibleOffers.length > 1 && (
               <p className="text-xs text-center mt-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
                 ← Faites défiler pour voir plus d'offres →
               </p>
