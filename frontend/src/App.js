@@ -2231,7 +2231,7 @@ function App() {
 
   const calculateTotal = () => {
     if (!selectedOffer) return 0;
-    let total = selectedOffer.price;
+    let total = selectedOffer.price * quantity; // Multiplier par la quantité
     if (appliedDiscount) {
       if (appliedDiscount.type === "100%" || (appliedDiscount.type === "%" && parseFloat(appliedDiscount.value) >= 100)) total = 0;
       else if (appliedDiscount.type === "%") total = total * (1 - parseFloat(appliedDiscount.value) / 100);
@@ -2245,6 +2245,7 @@ function App() {
     setSelectedOffer(null); setSelectedSession(null); setUserName(""); 
     setUserEmail(""); setUserWhatsapp(""); setDiscountCode(""); 
     setHasAcceptedTerms(false); setAppliedDiscount(null); setPromoMessage({ type: '', text: '' });
+    setQuantity(1); // Reset quantité
   };
 
   // Reset form but keep client info (for repeat purchases)
@@ -2252,6 +2253,7 @@ function App() {
     setPendingReservation(null); setSelectedCourse(null); setSelectedDate(null);
     setSelectedOffer(null); setSelectedSession(null); setDiscountCode(""); 
     setHasAcceptedTerms(false); setAppliedDiscount(null); setPromoMessage({ type: '', text: '' });
+    setQuantity(1); // Reset quantité
     // Keep userName, userEmail, userWhatsapp for convenience
   };
 
