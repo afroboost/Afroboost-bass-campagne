@@ -5216,7 +5216,7 @@ function App() {
                   key={offer.id} 
                   offer={offer} 
                   selected={selectedOffer?.id === offer.id} 
-                  onClick={() => setSelectedOffer(offer)} 
+                  onClick={() => handleSelectOffer(offer)} 
                 />
               ))}
             </div>
