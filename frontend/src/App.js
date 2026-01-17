@@ -2776,8 +2776,8 @@ function App() {
     !o.isProduct && o.visible !== false
   );
   
-  // 3. COURS avec leur propre visibilité
-  const baseCourses = courses.filter(c => c.visible !== false);
+  // 3. COURS avec leur propre visibilité (exclure les archivés)
+  const baseCourses = courses.filter(c => c.visible !== false && c.archived !== true);
   
   // Fonction de recherche floue (fuzzy search)
   const fuzzyMatch = (text, query) => {
