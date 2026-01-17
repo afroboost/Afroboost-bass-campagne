@@ -2556,6 +2556,65 @@ function App() {
     window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
+  // Notification automatique au coach (email + WhatsApp via API)
+  const notifyCoachAutomatic = async (reservation) => {
+    try {
+      // Appeler l'endpoint backend pour obtenir les configs de notification
+      const dateStr = new Date(reservation.datetime).toLocaleDateString('fr-CH', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+      
+      const notifyResponse = await axios.post(`${API}/notify-coach`, {
+        clientName: reservation.userName,
+        clientEmail: reservation.userEmail,
+        clientWhatsapp: reservation.userWhatsapp,
+        offerName: reservation.offerName,
+        courseName: reservation.courseName,
+        sessionDate: dateStr,
+        amount: reservation.totalPrice,
+        reservationCode: reservation.reservationCode
+      });
+
+      if (!notifyResponse.data.success) {
+        console.log("Coach notification not configured:", notifyResponse.data.message);
+        return;
+      }
+
+      const { coachEmail, coachPhone, message, subject } = notifyResponse.data;
+
+      // Envoyer notification email si configuré et EmailJS est actif
+      if (coachEmail && isEmailJSConfigured()) {
+        try {
+          await sendEmail({
+            to_email: coachEmail,
+            to_name: "Coach Afroboost",
+            subject: subject,
+            message: message
+          });
+          console.log("✅ Email notification sent to coach");
+        } catch (emailErr) {
+          console.error("Email notification failed:", emailErr);
+        }
+      }
+
+      // Envoyer notification WhatsApp si configuré et Twilio est actif
+      if (coachPhone && isWhatsAppConfigured()) {
+        try {
+          await sendWhatsAppMessage({
+            to: coachPhone,
+            message: message,
+            contactName: "Coach"
+          });
+          console.log("✅ WhatsApp notification sent to coach");
+        } catch (waErr) {
+          console.error("WhatsApp notification failed:", waErr);
+        }
+      }
+    } catch (err) {
+      console.error("Coach notification error:", err);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedCourse || !selectedDate || !selectedOffer || !hasAcceptedTerms) return;
