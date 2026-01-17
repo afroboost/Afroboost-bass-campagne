@@ -1917,6 +1917,36 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
       setDiscountCodes(discountCodes.filter(c => c.id !== codeId));
     }
   };
+  
+  // Delete reservation
+  const deleteReservation = async (reservationId) => {
+    if (window.confirm(t('confirmDeleteReservation'))) {
+      try {
+        await axios.delete(`${API}/reservations/${reservationId}`);
+        setReservations(reservations.filter(r => r.id !== reservationId));
+      } catch (err) {
+        console.error("Erreur suppression réservation:", err);
+      }
+    }
+  };
+  
+  // Add manual contact to users list (for beneficiary dropdown)
+  const addManualContact = async (e) => {
+    e.preventDefault();
+    if (!manualContact.name || !manualContact.email) return;
+    try {
+      const response = await axios.post(`${API}/users`, {
+        name: manualContact.name,
+        email: manualContact.email,
+        whatsapp: manualContact.whatsapp || ""
+      });
+      setUsers([...users, response.data]);
+      setManualContact({ name: "", email: "", whatsapp: "" });
+      setShowManualContactForm(false);
+    } catch (err) {
+      console.error("Erreur ajout contact:", err);
+    }
+  };
 
   const handleImportCSV = (e) => {
     const file = e.target.files[0];
