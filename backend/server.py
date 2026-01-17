@@ -365,6 +365,13 @@ async def update_course(course_id: str, course: CourseCreate):
     updated = await db.courses.find_one({"id": course_id}, {"_id": 0})
     return updated
 
+@api_router.put("/courses/{course_id}/archive")
+async def archive_course(course_id: str):
+    """Archive a course instead of deleting it"""
+    await db.courses.update_one({"id": course_id}, {"$set": {"archived": True}})
+    updated = await db.courses.find_one({"id": course_id}, {"_id": 0})
+    return {"success": True, "course": updated}
+
 @api_router.delete("/courses/{course_id}")
 async def delete_course(course_id: str):
     await db.courses.delete_one({"id": course_id})
