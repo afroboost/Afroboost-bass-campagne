@@ -146,6 +146,9 @@ class Reservation(BaseModel):
     validated: bool = False
     validatedAt: Optional[str] = None
     selectedVariants: Optional[dict] = None  # { size: "M", color: "Noir" }
+    variantsText: Optional[str] = None  # "Taille: M, Couleur: Noir"
+    shippingAddress: Optional[str] = None  # Adresse de livraison
+    isProduct: bool = False  # True si produit physique
     tva: float = 0.0
     shippingCost: float = 0.0
     trackingNumber: Optional[str] = None  # Numéro de suivi colis
@@ -168,6 +171,10 @@ class ReservationCreate(BaseModel):
     discountCode: Optional[str] = None
     discountType: Optional[str] = None
     discountValue: Optional[float] = None
+    selectedVariants: Optional[dict] = None
+    variantsText: Optional[str] = None
+    shippingAddress: Optional[str] = None
+    isProduct: bool = False
 
 class DiscountCode(BaseModel):
     model_config = ConfigDict(extra="ignore")
