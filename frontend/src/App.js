@@ -1678,7 +1678,7 @@ const EventPosterModal = ({ mediaUrl, onClose }) => {
 };
 
 // Success Overlay with Image Share Functionality
-const SuccessOverlay = ({ t, data, onClose }) => {
+const SuccessOverlay = ({ t, data, onClose, onClearTicket }) => {
   const ticketRef = useRef(null);
   const [isGenerating, setIsGenerating] = useState(false);
   
