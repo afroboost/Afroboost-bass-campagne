@@ -1036,6 +1036,147 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   };
 
+  // Launch campaign WITH REAL SENDING via EmailJS and Twilio
+  const launchCampaignWithSend = async (e, campaignId) => {
+    // Protection PostHog - Empêcher la propagation d'événements
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    try {
+      // 1. Récupérer la campagne
+      const campaign = campaigns.find(c => c.id === campaignId);
+      if (!campaign) {
+        alert('❌ Campagne non trouvée');
+        return;
+      }
+
+      addCampaignLog(campaignId, 'Préparation de l\'envoi...', 'info');
+
+      // 2. Préparer d'abord la campagne côté backend
+      const launchRes = await axios.post(`${API}/campaigns/${campaignId}/launch`);
+      const launchedCampaign = launchRes.data;
+      setCampaigns(campaigns.map(c => c.id === campaignId ? launchedCampaign : c));
+
+      // 3. Récupérer les contacts à envoyer
+      const results = launchedCampaign.results || [];
+      if (results.length === 0) {
+        alert('⚠️ Aucun contact à envoyer');
+        return;
+      }
+
+      // 4. Séparer par canal
+      const emailResults = results.filter(r => r.channel === 'email' && r.contactEmail);
+      const whatsAppResults = results.filter(r => r.channel === 'whatsapp' && r.contactPhone);
+
+      // Confirmation
+      const confirmMsg = `🚀 Lancer la campagne "${campaign.name}" ?\n\n` +
+        `📧 ${emailResults.length} email(s)\n` +
+        `📱 ${whatsAppResults.length} WhatsApp\n\n` +
+        `⚠️ Cette action est irréversible.`;
+      
+      if (!window.confirm(confirmMsg)) {
+        return;
+      }
+
+      let totalSent = 0;
+      let totalFailed = 0;
+
+      // 5. Envoyer les emails via EmailJS
+      if (emailResults.length > 0 && isEmailJSConfigured()) {
+        addCampaignLog(campaignId, `Envoi de ${emailResults.length} email(s)...`, 'info');
+        
+        for (let i = 0; i < emailResults.length; i++) {
+          const result = emailResults[i];
+          try {
+            // Payload JSON plat pour EmailJS - évite DataCloneError
+            const emailSent = await sendBulkEmails(
+              [{ email: result.contactEmail, name: result.contactName }],
+              {
+                name: campaign.name || 'Afroboost - Message',
+                message: campaign.message,
+                mediaUrl: campaign.mediaUrl
+              },
+              null // Pas de callback de progression pour chaque email individuel
+            );
+
+            if (emailSent.sent > 0) {
+              totalSent++;
+              // Marquer comme envoyé dans le backend
+              await axios.post(`${API}/campaigns/${campaignId}/mark-sent`, {
+                contactId: result.contactId,
+                channel: 'email'
+              });
+            } else {
+              totalFailed++;
+            }
+          } catch (emailErr) {
+            console.error(`❌ Email failed for ${result.contactEmail}:`, emailErr);
+            totalFailed++;
+          }
+          
+          // Délai entre les envois
+          if (i < emailResults.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        }
+      }
+
+      // 6. Envoyer les WhatsApp via Twilio
+      if (whatsAppResults.length > 0 && isWhatsAppConfigured()) {
+        addCampaignLog(campaignId, `Envoi de ${whatsAppResults.length} WhatsApp...`, 'info');
+        
+        for (let i = 0; i < whatsAppResults.length; i++) {
+          const result = whatsAppResults[i];
+          try {
+            // Appel Twilio avec les bons paramètres (phone + message uniquement)
+            const whatsAppSent = await sendBulkWhatsApp(
+              [{ phone: result.contactPhone, name: result.contactName }],
+              {
+                message: campaign.message,
+                mediaUrl: campaign.mediaUrl
+              },
+              null
+            );
+
+            if (whatsAppSent.sent > 0) {
+              totalSent++;
+              // Marquer comme envoyé dans le backend
+              await axios.post(`${API}/campaigns/${campaignId}/mark-sent`, {
+                contactId: result.contactId,
+                channel: 'whatsapp'
+              });
+            } else {
+              totalFailed++;
+            }
+          } catch (waErr) {
+            console.error(`❌ WhatsApp failed for ${result.contactPhone}:`, waErr);
+            totalFailed++;
+          }
+          
+          // Délai entre les envois (plus long pour Twilio)
+          if (i < whatsAppResults.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      }
+
+      // 7. Recharger la campagne mise à jour
+      const updatedRes = await axios.get(`${API}/campaigns/${campaignId}`);
+      setCampaigns(campaigns.map(c => c.id === campaignId ? updatedRes.data : c));
+
+      // 8. Notification finale
+      addCampaignLog(campaignId, `✅ Campagne terminée: ${totalSent} envoyés, ${totalFailed} échoués`, 'success');
+      alert(`✅ Campagne "${campaign.name}" terminée !\n\n✓ Envoyés: ${totalSent}\n✗ Échoués: ${totalFailed}`);
+
+    } catch (err) {
+      console.error("Error launching campaign with send:", err);
+      addCampaignLog(campaignId, `❌ Erreur: ${err.message}`, 'error');
+      alert(`❌ Erreur lors de l'envoi: ${err.message}`);
+    }
+  };
+
   // Delete campaign
   const deleteCampaign = async (campaignId) => {
     if (!window.confirm("Supprimer cette campagne ?")) return;
