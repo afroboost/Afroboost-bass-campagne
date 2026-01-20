@@ -839,7 +839,11 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   const [messageCopied, setMessageCopied] = useState(false);
 
   // === EMAILJS STATE ===
-  const [emailJSConfig, setEmailJSConfig] = useState(() => getEmailJSConfig());
+  const [emailJSConfig, setEmailJSConfig] = useState(() => {
+    // Charger la config de manière synchrone depuis localStorage
+    const config = getEmailJSConfig();
+    return config;
+  });
   const [showEmailJSConfig, setShowEmailJSConfig] = useState(false);
   const [emailSendingProgress, setEmailSendingProgress] = useState(null); // {current, total, status, name}
   const [emailSendingResults, setEmailSendingResults] = useState(null); // {sent, failed, errors}
