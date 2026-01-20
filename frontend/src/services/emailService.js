@@ -1,19 +1,17 @@
 // emailService.js - Service d'envoi d'emails automatisés via EmailJS
-// Compatible Vercel - Configuration stockée dans localStorage et MongoDB
+// Compatible Vercel - Configuration stockée dans localStorage
 import emailjs from '@emailjs/browser';
 
-// API URL
-const API = process.env.REACT_APP_BACKEND_URL || '';
-
-// === CONFIGURATION DÉFAUT (si rien n'est configuré) ===
+// === CONFIGURATION DÉFAUT - IDs validés ===
 const DEFAULT_CONFIG = {
   serviceId: 'service_8mrmxim',
   templateId: 'template_3n1u86p',
   publicKey: '5LfgQSIEQoqq_XSqt'
 };
 
-// === CONFIGURATION CACHE (localStorage) ===
+// === ÉTAT ===
 let cachedConfig = null;
+let isInitialized = false;
 
 /**
  * Charge la config depuis localStorage (synchrone)
@@ -22,12 +20,16 @@ const loadConfigFromStorage = () => {
   try {
     const stored = localStorage.getItem('emailjs_config');
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      // Valider que tous les champs sont présents
+      if (parsed.serviceId && parsed.templateId && parsed.publicKey) {
+        return parsed;
+      }
     }
   } catch (e) {
-    console.error('Error loading EmailJS config from storage:', e);
+    console.error('Error loading EmailJS config:', e);
   }
-  return DEFAULT_CONFIG;
+  return { ...DEFAULT_CONFIG };
 };
 
 /**
@@ -38,43 +40,31 @@ const saveConfigToStorage = (config) => {
     localStorage.setItem('emailjs_config', JSON.stringify(config));
     return true;
   } catch (e) {
-    console.error('Error saving EmailJS config to storage:', e);
+    console.error('Error saving EmailJS config:', e);
     return false;
   }
 };
 
-// Initialiser le cache au chargement
+// Initialiser le cache au chargement du module
 cachedConfig = loadConfigFromStorage();
 
 /**
- * Récupère la configuration EmailJS (synchrone depuis cache)
+ * Récupère la configuration EmailJS (synchrone)
  */
 export const getEmailJSConfig = () => {
   if (!cachedConfig) {
     cachedConfig = loadConfigFromStorage();
   }
-  return cachedConfig;
+  return { ...cachedConfig };
 };
 
 /**
  * Sauvegarde la configuration EmailJS
  */
 export const saveEmailJSConfig = (config) => {
-  cachedConfig = config;
-  const saved = saveConfigToStorage(config);
-  
-  // Aussi sauvegarder en backend si disponible
-  try {
-    fetch(`${API}/api/emailjs-config`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config)
-    }).catch(e => console.log('Backend save optional:', e));
-  } catch (e) {
-    // Ignorer si backend non disponible
-  }
-  
-  return saved;
+  cachedConfig = { ...config };
+  isInitialized = false; // Forcer la réinitialisation
+  return saveConfigToStorage(config);
 };
 
 /**
@@ -86,14 +76,17 @@ export const isEmailJSConfigured = () => {
 };
 
 /**
- * Initialise EmailJS avec la clé publique
+ * Initialise EmailJS une seule fois
  */
 export const initEmailJS = () => {
+  if (isInitialized) return true;
+  
   const config = getEmailJSConfig();
   if (config.publicKey) {
     try {
       emailjs.init(config.publicKey);
-      console.log('✅ EmailJS initialized with public key');
+      isInitialized = true;
+      console.log('✅ EmailJS initialized');
       return true;
     } catch (e) {
       console.error('❌ EmailJS init error:', e);
@@ -104,47 +97,29 @@ export const initEmailJS = () => {
 };
 
 /**
- * Envoie un email à un destinataire unique
+ * Envoie un email avec un objet JSON plat et simple
  */
 export const sendEmail = async (params) => {
   const config = getEmailJSConfig();
   
+  // Vérifier la configuration
   if (!config.serviceId || !config.templateId || !config.publicKey) {
-    console.error('❌ EmailJS non configuré:', config);
-    throw new Error('EmailJS non configuré. Veuillez configurer les clés dans l\'onglet Campagnes.');
+    console.error('❌ EmailJS non configuré');
+    return { success: false, error: 'EmailJS non configuré' };
   }
 
-  // Initialiser EmailJS
+  // Initialiser si nécessaire
   initEmailJS();
 
-  // Personnaliser le message avec le prénom
-  let personalizedMessage = params.message || '';
-  if (params.to_name) {
-    const firstName = params.to_name.split(' ')[0];
-    personalizedMessage = personalizedMessage.replace(/{prénom}/gi, firstName);
-  }
-
-  // Ajouter le média au message si présent
-  const fullMessage = params.media_url 
-    ? `${personalizedMessage}\n\n🔗 Voir le visuel: ${params.media_url}`
-    : personalizedMessage;
-
-  // PARAMÈTRES EXACTS pour le template EmailJS
+  // Créer un objet JSON PLAT et SIMPLE - pas de références complexes
   const templateParams = {
-    to_email: params.to_email,
-    to_name: params.to_name || 'Client',
-    subject: params.subject || 'Afroboost - Message',
-    message: fullMessage,
-    from_name: 'Afroboost',
-    reply_to: 'contact.artboost@gmail.com'
+    to_email: String(params.to_email || ''),
+    to_name: String(params.to_name || 'Client'),
+    subject: String(params.subject || 'Afroboost'),
+    message: String(params.message || '')
   };
 
-  console.log('📧 Sending email with params:', {
-    serviceId: config.serviceId,
-    templateId: config.templateId,
-    to: params.to_email,
-    subject: templateParams.subject
-  });
+  console.log('📧 Sending email:', { to: templateParams.to_email, subject: templateParams.subject });
 
   try {
     const response = await emailjs.send(
@@ -154,11 +129,12 @@ export const sendEmail = async (params) => {
       config.publicKey
     );
     
-    console.log('✅ Email sent successfully:', response);
-    return { success: true, response };
+    console.log('✅ Email sent:', response.status, response.text);
+    return { success: true, response: { status: response.status, text: response.text } };
   } catch (error) {
-    console.error('❌ EmailJS send error:', error);
-    return { success: false, error: error.text || error.message || 'Erreur inconnue' };
+    const errorMsg = error?.text || error?.message || 'Erreur inconnue';
+    console.error('❌ EmailJS error:', errorMsg);
+    return { success: false, error: errorMsg };
   }
 };
 
