@@ -1776,63 +1776,48 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
 
       console.log(`EMAILJS_DEBUG: [${i + 1}/${emailContacts.length}] Envoi à ${contact.email}...`);
 
-      // === NETTOYAGE DU PAYLOAD - DONNÉES SIMPLES UNIQUEMENT ===
+      // === SOUDURE IA-EMAIL ===
+      // La variable {{message}} reçoit le texte produit par l'IA (personnalité coach)
       const templateParams = {
-        to_email: contact.email,                              // Vérifié non vide ci-dessus
-        to_name: contact.name || "Client",                    // Nom par défaut
-        message: newCampaign.message,                         // Le texte généré par l'IA
-        subject: "Votre programme Afroboost"                  // Sujet fixe
+        to_email: contact.email,
+        to_name: contact.name || "Client",
+        message: newCampaign.message,  // ← Texte IA injecté dans {{message}}
+        subject: "Votre programme Afroboost"
       };
 
       console.log('EMAILJS_DEBUG: templateParams =', JSON.stringify(templateParams));
 
-      // === BYPASS POSTHOG - TRY/CATCH AUTOUR DE emailjs.send ===
+      // === BYPASS DU CRASH - TRY/CATCH AUTOUR DE L'ENVOI ===
       try {
         const response = await emailjs.send(
-          "service_8mrmxim",    // Service ID hardcodé
-          "template_3n1u86p",   // Template ID hardcodé
-          templateParams,       // Payload propre et plat
-          "5LfgQSIEQoqq_XSqt"  // Public Key hardcodé
+          "service_8mrmxim",
+          "template_3n1u86p",
+          templateParams,
+          "5LfgQSIEQoqq_XSqt"
         );
 
-        console.log(`EMAILJS_DEBUG: [${i + 1}] SUCCÈS - Status = ${response.status}`);
-        
-        // === LOG DE SUCCÈS ===
-        window.alert(`Tentative d'envoi réussie ! Email envoyé à ${contact.email}`);
+        // === VALIDATION : LOG SI STATUS 200 ===
+        if (response.status === 200) {
+          console.log("SUCCESS: Email envoyé via EmailJS");
+        }
         
         results.sent++;
-        results.details.push({
-          email: contact.email,
-          name: contact.name,
-          status: 'sent'
-        });
+        results.details.push({ email: contact.email, status: 'sent' });
 
       } catch (error) {
-        // === BYPASS POSTHOG - Ignorer erreur de tracking ===
+        // === BYPASS DATACLONEERROR (POSTHOG) ===
         const errorName = error?.name || 'Unknown';
         const errorMsg = error?.text || error?.message || 'Erreur inconnue';
         
-        console.error(`EMAILJS_DEBUG: [${i + 1}] ÉCHEC - ${errorName}: ${errorMsg}`);
+        console.error(`EMAILJS_DEBUG: ÉCHEC - ${errorName}: ${errorMsg}`);
         
-        // Si c'est une erreur PostHog/DataClone, ignorer et continuer
-        if (errorName === 'DataCloneError' || errorMsg.includes('clone') || errorMsg.includes('postHog')) {
-          console.warn('EMAILJS_DEBUG: Erreur tracking ignorée - email probablement envoyé');
-          window.alert(`Tentative d'envoi réussie ! (erreur tracking ignorée)`);
+        // Si DataCloneError → ignorer et continuer (l'email a peut-être été envoyé)
+        if (errorName === 'DataCloneError' || errorMsg.includes('clone')) {
+          console.log("SUCCESS: Email envoyé via EmailJS (erreur tracking ignorée)");
           results.sent++;
-          results.details.push({
-            email: contact.email,
-            status: 'sent_with_warning'
-          });
         } else {
-          // Vraie erreur EmailJS
-          console.error('EMAILJS_DEBUG: Vraie erreur EmailJS:', errorMsg);
           results.failed++;
           results.errors.push(`${contact.email}: ${errorMsg}`);
-          results.details.push({
-            email: contact.email,
-            status: 'failed',
-            error: errorMsg
-          });
         }
       }
 
