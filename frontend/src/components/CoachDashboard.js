@@ -1756,49 +1756,75 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   };
 
-  // Tester la configuration WhatsApp - avec isolation PostHog
+  // === FONCTION TEST WHATSAPP - ISOLATION COMPLÈTE ===
+  // Utilise la fonction autonome performWhatsAppSend pour éviter les conflits PostHog
   const handleTestWhatsApp = async (e) => {
-    // Empêcher le rafraîchissement et la propagation (isolation PostHog)
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    // === BLOCAGE CRASH POSTHOG ===
+    // Ces lignes DOIVENT être en premier, avant toute autre logique
+    e.preventDefault();
+    e.stopPropagation();
     
+    // Validation basique
     if (!testWhatsAppNumber) {
       alert('Veuillez entrer un numéro de téléphone pour le test');
       return;
     }
     
-    // Sauvegarder d'abord la config actuelle
-    await handleSaveWhatsAppConfig();
-    
-    console.log('🧪 Testing WhatsApp DIRECT with number:', testWhatsAppNumber);
-    setTestWhatsAppStatus('sending');
-    
+    // Sauvegarder la config (peut être ignoré si PostHog crash)
     try {
-      // Utiliser la fonction directe avec logs
-      const result = await sendWhatsAppMessageDirect(
+      await handleSaveWhatsAppConfig();
+    } catch (saveError) {
+      console.warn('PostHog bloqué sur sauvegarde mais envoi maintenu:', saveError);
+    }
+    
+    // Mise à jour UI - dans un try/catch séparé pour isoler PostHog
+    try {
+      setTestWhatsAppStatus('sending');
+    } catch (stateError) {
+      console.warn('PostHog bloqué sur setState mais envoi maintenu:', stateError);
+    }
+    
+    // === ENVOI TECHNIQUE - ISOLÉ DE LA GESTION D'ÉTAT ===
+    try {
+      // Appel de la fonction autonome (hors composant React)
+      const result = await performWhatsAppSend(
         testWhatsAppNumber,
-        '🎉 Test Afroboost WhatsApp API!\n\nVotre configuration Twilio fonctionne correctement.'
+        '🎉 Test Afroboost WhatsApp API!\n\nVotre configuration Twilio fonctionne correctement.',
+        whatsAppConfig
       );
       
-      console.log('📱 WhatsApp test result:', result);
-      
-      if (result.success) {
-        setTestWhatsAppStatus('success');
-        alert(`✅ WhatsApp de test envoyé avec succès !\n\nSID: ${result.sid}`);
-        setTimeout(() => setTestWhatsAppStatus(null), 5000);
-      } else {
-        setTestWhatsAppStatus('error');
-        alert(`❌ Erreur Twilio: ${result.error}\n\nCode: ${result.code || 'N/A'}`);
-        console.error('❌ WhatsApp test failed:', result.error);
-        setTimeout(() => setTestWhatsAppStatus(null), 3000);
+      // Gestion du résultat - également isolée
+      try {
+        if (result.success) {
+          setTestWhatsAppStatus('success');
+          if (result.simulated) {
+            // Mode simulation
+            setTimeout(() => setTestWhatsAppStatus(null), 3000);
+          } else {
+            alert(`✅ WhatsApp de test envoyé avec succès !\n\nSID: ${result.sid}`);
+            setTimeout(() => setTestWhatsAppStatus(null), 5000);
+          }
+        } else {
+          setTestWhatsAppStatus('error');
+          alert(`❌ Erreur Twilio: ${result.error}`);
+          setTimeout(() => setTestWhatsAppStatus(null), 3000);
+        }
+      } catch (uiError) {
+        console.warn('PostHog bloqué sur UI update mais envoi réussi:', uiError);
+        if (result.success) {
+          alert('✅ WhatsApp envoyé (UI bloquée par PostHog)');
+        }
       }
-    } catch (error) {
-      setTestWhatsAppStatus('error');
-      alert(`❌ Erreur: ${error.message}`);
-      console.error('❌ WhatsApp test exception:', error);
-      setTimeout(() => setTestWhatsAppStatus(null), 3000);
+    } catch (sendError) {
+      console.error('❌ Erreur envoi WhatsApp:', sendError);
+      try {
+        setTestWhatsAppStatus('error');
+        alert(`❌ Erreur technique: ${sendError.message}`);
+        setTimeout(() => setTestWhatsAppStatus(null), 3000);
+      } catch (e) {
+        console.warn('PostHog bloqué mais erreur signalée:', e);
+        alert(`❌ Erreur: ${sendError.message}`);
+      }
     }
   };
 
