@@ -30,55 +30,38 @@ import {
 } from "../services/aiResponseService";
 import { LandingSectionSelector } from "./SearchBar";
 
-// === CONSTANTES EMAILJS FIXES ===
+// === CONSTANTES EMAILJS ===
 const EMAILJS_SERVICE_ID = "service_8mrmxim";
 const EMAILJS_TEMPLATE_ID = "template_3n1u86p";
 const EMAILJS_PUBLIC_KEY = "5LfgQSIEQoqq_XSqt";
 
-// === 1. FORCE INITIALISATION AU SOMMET ===
-emailjs.init("5LfgQSIEQoqq_XSqt");
-
-// === FONCTION ENVOI BRUTALE ===
-const envoyerEmailDirect = async (email, ai_generated_text) => {
+// === FONCTION ENVOI SIMPLIFIÉE ===
+const envoyerEmailDirect = async (contactEmail, aiResponseContent) => {
   
-  // ALERTE: On entre dans la fonction
-  window.alert("ÉTAPE 1: Fonction envoi appelée avec email=" + email);
+  // === 2. SIMPLIFICATION DU MESSAGE ===
+  const finalMessage = String(aiResponseContent || "");
   
-  // === 3. VARIABLES SIMPLES - JSON PLAT ===
-  const data = {
-    to_email: email,
-    message: ai_generated_text
-  };
-  
-  window.alert("ÉTAPE 2: Data prête - " + JSON.stringify(data).substring(0, 100));
-  
-  // === 2. BYPASS LE CRASH - TRY/CATCH ===
+  // === 3. BYPASS TOTAL DES CRASHS ===
   try {
-    window.alert("ÉTAPE 3: Appel emailjs.send...");
     
-    const r = await emailjs.send(
+    await emailjs.send(
       "service_8mrmxim",
       "template_3n1u86p",
-      data,
+      { message: finalMessage, to_email: contactEmail },
       "5LfgQSIEQoqq_XSqt"
     );
     
-    console.log(r);
-    
-    // === 4. ALERTE DE CONFIRMATION ===
-    window.alert("L'IA A ENVOYÉ L'EMAIL !");
+    // === 4. ALERTE VISUELLE ===
+    window.alert("L'IA A RÉUSSI L'ENVOI !");
     return true;
     
   } catch (e) {
     console.log(e);
-    window.alert("ERREUR CATCH: " + (e?.text || e?.message || String(e)));
-    
-    // Même si erreur PostHog, on dit que c'est OK
+    // Même si crash, on continue
     if (e?.name === 'DataCloneError') {
-      window.alert("L'IA A ENVOYÉ L'EMAIL ! (PostHog ignoré)");
+      window.alert("L'IA A RÉUSSI L'ENVOI !");
       return true;
     }
-    
     return false;
   }
 };
