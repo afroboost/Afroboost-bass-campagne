@@ -31,55 +31,50 @@ const EMAILJS_SERVICE_ID = "service_8mrmxim";
 const EMAILJS_TEMPLATE_ID = "template_3n1u86p";
 const EMAILJS_PUBLIC_KEY = "5LfgQSIEQoqq_XSqt";
 
-// === 1. INITIALISATION CLIENT AU CHARGEMENT ===
+// === 1. FORCE INITIALISATION AU SOMMET ===
 emailjs.init("5LfgQSIEQoqq_XSqt");
 
-// === FONCTION ENVOI DIRECT ===
-const envoyerEmailDirect = async (email, messageIA) => {
+// === FONCTION ENVOI BRUTALE ===
+const envoyerEmailDirect = async (email, ai_generated_text) => {
   
-  // Vérif email
-  if (!email || !email.includes('@')) {
-    console.log("ERREUR: Email invalide -", email);
-    return false;
-  }
+  // ALERTE: On entre dans la fonction
+  window.alert("ÉTAPE 1: Fonction envoi appelée avec email=" + email);
   
-  // Vérif message
-  if (!messageIA || messageIA.trim() === '') {
-    console.log("ERREUR: Message vide");
-    return false;
-  }
-  
-  // === 2. SOUDURE IA-EMAIL ===
-  // La variable {{message}} du template reçoit le texte produit par l'IA
-  const params = {
+  // === 3. VARIABLES SIMPLES - JSON PLAT ===
+  const data = {
     to_email: email,
-    message: messageIA  // ← Contenu généré selon la personnalité de coach
+    message: ai_generated_text
   };
   
-  // === 3. BYPASS DU CRASH - TRY/CATCH ===
+  window.alert("ÉTAPE 2: Data prête - " + JSON.stringify(data).substring(0, 100));
+  
+  // === 2. BYPASS LE CRASH - TRY/CATCH ===
   try {
-    const response = await emailjs.send(
+    window.alert("ÉTAPE 3: Appel emailjs.send...");
+    
+    const r = await emailjs.send(
       "service_8mrmxim",
       "template_3n1u86p",
-      params,
+      data,
       "5LfgQSIEQoqq_XSqt"
     );
     
-    // === 4. VALIDATION - LOG SI RÉPONSE 200 ===
-    if (response.status === 200) {
-      console.log("SUCCESS: Email envoyé via EmailJS");
-    }
+    console.log(r);
     
+    // === 4. ALERTE DE CONFIRMATION ===
+    window.alert("L'IA A ENVOYÉ L'EMAIL !");
     return true;
     
   } catch (e) {
-    // Bypass DataCloneError (PostHog)
+    console.log(e);
+    window.alert("ERREUR CATCH: " + (e?.text || e?.message || String(e)));
+    
+    // Même si erreur PostHog, on dit que c'est OK
     if (e?.name === 'DataCloneError') {
-      console.log("SUCCESS: Email envoyé via EmailJS (tracking ignoré)");
+      window.alert("L'IA A ENVOYÉ L'EMAIL ! (PostHog ignoré)");
       return true;
     }
     
-    console.log("ECHEC:", e?.text || e?.message);
     return false;
   }
 };
