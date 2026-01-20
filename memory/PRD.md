@@ -99,38 +99,39 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 - Tests spécifiques campagnes: 8/8 passés
 
 ### Correction Bug DataCloneError PostHog + EmailJS/Twilio (20 Jan 2026)
-1. ✅ **Import direct SDK EmailJS**:
-   - `import emailjs from '@emailjs/browser'` dans CoachDashboard.js
-   - Constantes fixes: `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`
-   - Valeurs: `service_8mrmxim`, `template_3n1u86p`, `5LfgQSIEQoqq_XSqt`
 
-2. ✅ **Initialisation SDK useEffect**:
+#### Architecture chirurgicale - Séparation envoi technique / gestion d'état
+Les fonctions d'envoi sont maintenant **au niveau module** (hors React) pour éviter tout conflit avec PostHog :
+
+1. ✅ **`performEmailSend` (ligne 56) - Fonction autonome**:
    ```javascript
-   useEffect(() => {
-     emailjs.init(EMAILJS_PUBLIC_KEY);
-   }, []);
+   const performEmailSend = async (destination, recipientName, subject, text) => {
+     console.log('DEMANDE EMAILJS ENVOYÉE');
+     const params = { to_email: destination, to_name: recipientName, subject, message: text };
+     return await emailjs.send(SERVICE_ID, TEMPLATE_ID, params, PUBLIC_KEY);
+   };
    ```
 
-3. ✅ **handleTestEmailJS - Appel DIRECT emailjs.send()**:
-   - Payload JSON plat: `{ to_email, to_name, subject, message }`
-   - Appel direct: `emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY)`
-   - Protection PostHog: `e.preventDefault()` + `e.stopPropagation()`
+2. ✅ **`performWhatsAppSend` (ligne 97) - Fonction autonome avec simulation**:
+   - Si Twilio non configuré: `alert("WhatsApp prêt pour : " + phoneNumber)`
+   - Sinon: Appel direct à `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`
 
-4. ✅ **sendWhatsAppMessageDirect - Logs clairs**:
-   - Log détaillé: `console.log('📱 Envoi WhatsApp vers:', phoneNumber, 'avec SID:', accountSid)`
-   - Vérification config: accountSid, authToken, fromNumber
-   - Appel direct API Twilio avec Basic Auth
+3. ✅ **Initialisation SDK au chargement du module (ligne 37)**:
+   ```javascript
+   try {
+     emailjs.init(EMAILJS_PUBLIC_KEY);
+   } catch (initError) { console.error('Erreur init:', initError); }
+   ```
 
-5. ✅ **launchCampaignWithSend - Itération réelle**:
-   - Itère sur `emailResults` avec boucle `for`
-   - Appelle `emailjs.send()` pour CHAQUE contact sélectionné
-   - Appelle `sendWhatsAppMessageDirect()` pour WhatsApp
-   - Marque chaque contact comme envoyé dans le backend
+4. ✅ **Handlers avec isolation PostHog**:
+   - `e.preventDefault()` et `e.stopPropagation()` EN PREMIER (avant toute logique)
+   - try/catch imbriqués: un pour `setState`, un pour l'envoi, un pour l'UI
+   - Exemple: `try { setTestEmailStatus('sending'); } catch (e) { console.warn('PostHog bloqué mais envoi maintenu'); }`
 
-6. ✅ **Tests automatisés** (`/app/tests/test_emailjs_whatsapp_bindings.py`):
-   - 26/26 tests passés
-   - Backend: 3/3 API tests
-   - Frontend: 23/23 code implementation tests
+5. ✅ **Tests automatisés** (`/app/tests/test_autonomous_functions.py`):
+   - 25/25 tests passés
+   - Vérification que les fonctions sont AVANT le composant React
+   - Vérification des try/catch imbriqués
 
 ### Corrections Bug Fixes (15 Jan 2026)
 1. ✅ **Scanner QR amélioré**:
