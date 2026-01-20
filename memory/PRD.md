@@ -99,48 +99,38 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 - Tests spécifiques campagnes: 8/8 passés
 
 ### Correction Bug DataCloneError PostHog + EmailJS/Twilio (20 Jan 2026)
-1. ✅ **Fix DataCloneError PostHog**:
-   - Configuration PostHog mise à jour dans `index.html` (lignes 198-209)
-   - `capture_performance: false` - Empêche le clonage de PerformanceServerTiming
-   - `disable_session_recording: true` - Désactive l'enregistrement de session
-   - `autocapture: false` - Désactive la capture automatique des événements
+1. ✅ **Import direct SDK EmailJS**:
+   - `import emailjs from '@emailjs/browser'` dans CoachDashboard.js
+   - Constantes fixes: `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`
+   - Valeurs: `service_8mrmxim`, `template_3n1u86p`, `5LfgQSIEQoqq_XSqt`
 
-2. ✅ **Protection handlers avec e.preventDefault() + e.stopPropagation()**:
-   - `handleTestEmailJS` - Protection complète avec try/catch
-   - `handleTestWhatsApp` - Protection complète avec try/catch
-   - `handleSendEmailCampaign` - Protection complète
-   - `handleSendWhatsAppCampaign` - Protection complète
-   - `handleBulkSendCampaign` - Protection complète avec notifications
-   - `launchCampaignWithSend` - **NOUVEAU**: Itère sur les contacts et envoie réellement
+2. ✅ **Initialisation SDK useEffect**:
+   ```javascript
+   useEffect(() => {
+     emailjs.init(EMAILJS_PUBLIC_KEY);
+   }, []);
+   ```
 
-3. ✅ **Payload EmailJS plat (service `emailService.js`)**:
-   - Objet JSON plat avec `String()` conversion
-   - IDs par défaut : `service_8mrmxim`, `template_3n1u86p`, `5LfgQSIEQoqq_XSqt`
-   - Pas de références complexes (évite DataCloneError)
+3. ✅ **handleTestEmailJS - Appel DIRECT emailjs.send()**:
+   - Payload JSON plat: `{ to_email, to_name, subject, message }`
+   - Appel direct: `emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY)`
+   - Protection PostHog: `e.preventDefault()` + `e.stopPropagation()`
 
-4. ✅ **WhatsApp/Twilio service (`whatsappService.js`)**:
-   - Utilise `accountSid`, `authToken`, `fromNumber` depuis le state
-   - Appel API Twilio avec Basic Auth
-   - Payload: uniquement phone + message (pas d'objets complexes)
+4. ✅ **sendWhatsAppMessageDirect - Logs clairs**:
+   - Log détaillé: `console.log('📱 Envoi WhatsApp vers:', phoneNumber, 'avec SID:', accountSid)`
+   - Vérification config: accountSid, authToken, fromNumber
+   - Appel direct API Twilio avec Basic Auth
 
-5. ✅ **Bouton "Lancer" amélioré**:
-   - `launchCampaignWithSend` itère sur tous les contacts
-   - Envoie emails via EmailJS ET WhatsApp via Twilio
-   - Marque chaque contact comme "envoyé" dans le backend
-   - Notification de progression et de succès
+5. ✅ **launchCampaignWithSend - Itération réelle**:
+   - Itère sur `emailResults` avec boucle `for`
+   - Appelle `emailjs.send()` pour CHAQUE contact sélectionné
+   - Appelle `sendWhatsAppMessageDirect()` pour WhatsApp
+   - Marque chaque contact comme envoyé dans le backend
 
-6. ✅ **data-testid ajoutés pour tests automatisés**:
-   - `test-email-btn`, `test-email-input`
-   - `test-whatsapp-btn`
-   - `send-email-campaign-btn`
-   - `send-whatsapp-campaign-btn`
-   - `bulk-send-campaign-btn`
-   - `launch-campaign-${campaign.id}`
-
-7. ✅ **Tests automatisés** (`/app/tests/test_campaign_buttons.py`):
-   - 27/27 tests passés
-   - Backend: 3/3 API tests (health, whatsapp-config, campaigns)
-   - Frontend: 24/24 code implementation tests
+6. ✅ **Tests automatisés** (`/app/tests/test_emailjs_whatsapp_bindings.py`):
+   - 26/26 tests passés
+   - Backend: 3/3 API tests
+   - Frontend: 23/23 code implementation tests
 
 ### Corrections Bug Fixes (15 Jan 2026)
 1. ✅ **Scanner QR amélioré**:
